@@ -104,6 +104,13 @@ int main(int argc, char* argv[])
   // destroy application encoder class
   cTAppEncTop.destroy();
 
+#if JH_IS_DEBUGING
+
+  cout << "试一下看看有没有输出" << endl;
+  system("pause");
+
+#endif 
+
   return 0;
 }
 
