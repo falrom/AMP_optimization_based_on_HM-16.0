@@ -40,6 +40,8 @@
 #include "TAppEncTop.h"
 #include "TAppCommon/program_options_lite.h"
 
+#include "TLibCommon/JHdebug.h"
+
 //! \ingroup TAppEncoder
 //! \{
 
@@ -106,7 +108,8 @@ int main(int argc, char* argv[])
 
 #if JH_IS_DEBUGING
 
-  cout << "试一下看看有没有输出" << endl;
+  cout << "共进行了：" << JHdebug::timesOfAmpJudge << "次AMP模式判决" << endl;
+  cout << "（非最终）结果采用了AMP模式的次数为：" << JHdebug::timesOfUsingAmp << endl;
   system("pause");
 
 #endif 

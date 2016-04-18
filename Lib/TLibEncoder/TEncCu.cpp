@@ -43,6 +43,9 @@
 
 #include <cmath>
 #include <algorithm>
+
+#include "TLibCommon/JHdebug.h"
+
 using namespace std;
 
 
@@ -555,6 +558,11 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 					//! Try AMP (SIZE_2NxnU, SIZE_2NxnD, SIZE_nLx2N, SIZE_nRx2N)
 					if (pcPic->getSlice(0)->getSPS()->getAMPAcc(uiDepth))//应该是获取该深度下AMP精度，即某一深度下是否允许AMP
 					{
+
+#if JH_IS_DEBUGING
+						JHdebug::timesOfAmpJudge++;
+#endif
+
 #if AMP_ENC_SPEEDUP//执行AMP的快速算法。到相对应的#else之间，全部属于AMP快速算法的流程
 						Bool bTestAMP_Hor = false, bTestAMP_Ver = false;
 						//Hor和Ver分别代表横向和纵向
@@ -653,6 +661,13 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug), true);
 								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
 							}
+						}
+#endif
+
+#if JH_IS_DEBUGING
+						if ((rpcBestCU->getPartitionSize(0) >= 4) && (rpcBestCU->getPartitionSize(0) <= 7))//AMP模式的几种尺寸枚举值在4~7
+						{
+							JHdebug::timesOfUsingAmp++;
 						}
 #endif
 
