@@ -108,8 +108,15 @@ int main(int argc, char* argv[])
 
 #if JH_IS_DEBUGING
 
+#if FIND_AMP_TIMES
   cout << "共进行了：" << JHdebug::timesOfAmpJudge << "次AMP模式判决" << endl;
   cout << "（非最终）结果采用了AMP模式的次数为：" << JHdebug::timesOfUsingAmp << endl;
+#endif
+
+#if PRINT_ENCODE_ALLP_TIME
+  cout << "编码所有P帧共用时：" << JHdebug::timeOfAllP << "s" << endl;
+#endif // PRINT_ENCODE_ALLP_TIME
+
   system("pause");
 
 #endif 

@@ -560,7 +560,9 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 					{
 
 #if JH_IS_DEBUGING
+#if FIND_AMP_TIMES
 						JHdebug::timesOfAmpJudge++;
+#endif 
 #endif
 
 #if AMP_ENC_SPEEDUP//执行AMP的快速算法。到相对应的#else之间，全部属于AMP快速算法的流程
@@ -665,10 +667,12 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 #endif
 
 #if JH_IS_DEBUGING
+#if FIND_AMP_TIMES
 						if ((rpcBestCU->getPartitionSize(0) >= 4) && (rpcBestCU->getPartitionSize(0) <= 7))//AMP模式的几种尺寸枚举值在4~7
 						{
 							JHdebug::timesOfUsingAmp++;
 						}
+#endif 
 #endif
 
 #else//放弃AMP的快速算法，一步步执行简单的各种情况的测试。

@@ -46,6 +46,8 @@
 #include "TAppEncTop.h"
 #include "TLibEncoder/AnnexBwrite.h"
 
+#include "TLibCommon\JHdebug.h"
+
 using namespace std;
 
 //! \ingroup TAppEncoder

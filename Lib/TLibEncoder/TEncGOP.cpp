@@ -49,6 +49,8 @@
 #include <time.h>
 #include <math.h>
 
+#include "TLibCommon\JHdebug.h"
+
 using namespace std;
 
 #if RExt__ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
@@ -1946,6 +1948,25 @@ Void TEncGOP::compressGOP( Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rc
 
     xCalculateAddPSNR( pcPic, pcPic->getPicYuvRec(), accessUnit, dEncTime, snr_conversion, printFrameMSE );
 
+#if JH_IS_DEBUGING
+#if PRINT_ENCODE_I2P_TIME
+	//打印时间
+
+	if (JHdebug::timeOfIEnd == 0)
+	{
+		// starting time
+		JHdebug::timeOfIEnd = clock();
+	}
+	else
+	{
+		// ending time
+		double dResult = (Double)(clock() - JHdebug::timeOfIEnd) / CLOCKS_PER_SEC;
+		printf("\n 从I帧编码完成到该P帧编码完成用时: %12.3f sec.\n", dResult);
+	}
+	
+#endif
+#endif
+
     //In case of field coding, compute the interlaced PSNR for both fields
     if (isField && ((!pcPic->isTopField() && isTff) || (pcPic->isTopField() && !isTff)) && (pcPic->getPOC()%m_iGopSize != 1))
     {
@@ -2549,6 +2570,15 @@ Void TEncGOP::xCalculateAddPSNR( TComPic* pcPic, TComPicYuv* pcPicD, const Acces
     printf(" [Y MSE %6.4lf  U MSE %6.4lf  V MSE %6.4lf]", MSEyuvframe[COMPONENT_Y], MSEyuvframe[COMPONENT_Cb], MSEyuvframe[COMPONENT_Cr] );
   }
   printf(" [ET %5.0f ]", dEncTime );
+
+#if JH_IS_DEBUGING
+#if PRINT_ENCODE_ALLP_TIME
+  if (c == 'P')
+  {
+	  JHdebug::timeOfAllP += dEncTime;
+  }
+#endif // PRINT_ENCODE_ALLP_TIME
+#endif
 
   for (Int iRefList = 0; iRefList < 2; iRefList++)
   {
