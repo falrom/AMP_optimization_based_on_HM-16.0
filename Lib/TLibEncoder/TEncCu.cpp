@@ -390,10 +390,11 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 	// variable for Early CU determination
 	Bool    bSubBranch = true;
 
-	// variable for Cbf fast mode PU decision
-	// CFM，即已经得到残差为零的预测模式后，不再进行其他模式的预测。
-	Bool    doNotBlockPu = true;//应该是当存在某种预测模式测试的残差为零时，该标志位就置false了
-	Bool    earlyDetectionSkipMode = false;
+	// 两个快速算法标志位。
+	// variable for Cbf fast mode PU decision    ////////即CFM，利用CBF标志位的快速算法，即已经得到残差为零的预测模式后，不再进行其他模式的预测。
+	Bool    doNotBlockPu = true;//CFM标志位。应该是当存在某种预测模式测试的残差变换量化后为零时，该标志位就置false了
+	Bool    earlyDetectionSkipMode = false;//应该是Skip优先快速算法标志位。
+	// Skip优先，即若能用Skip就用，earlyDetectionSkipMode置true，以后不再进行其他模式的计算，也不再递归向下分割CU了。
 
 	Bool bBoundary = false;
 	UInt uiLPelX = rpcBestCU->getCUPelX();
@@ -472,8 +473,10 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 			}
 
 			rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+			//每次算完RDC都要执行这一句。好像是用来恢复rpcTempCU的信息的。rpcTempCU中好像存储了该块的初始信息。
 
 			// do inter modes, SKIP and 2Nx2N
+			// 2Nx2N运动估计也是有AMVP和Merge两种。skip模式实际上属于Merge的2Nx2N的一种特殊情况。故，算skip也就是算2Nx2N。
 			if (rpcBestCU->getSlice()->getSliceType() != I_SLICE)
 			{
 				// 2Nx2N
@@ -485,8 +488,9 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 				// SKIP
 				xCheckRDCostMerge2Nx2N(rpcBestCU, rpcTempCU DEBUG_STRING_PASS_INTO(sDebug), &earlyDetectionSkipMode);//by Merge for inter_2Nx2N
 				rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+				//该Merge2Nx2N算法传入了earlyDetectionSkipMode参数。满足一定条件时会被置位为true。
 
-				if (!m_pcEncCfg->getUseEarlySkipDetection())
+				if (!m_pcEncCfg->getUseEarlySkipDetection())//skip优先快速算法和CBF标志快速算法（CFM）有重叠的部分。这里区分开，防止冗余运算，且可以分别开关。
 				{
 					// 2Nx2N, NxN
 					xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug));
@@ -520,7 +524,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 				// do inter modes, NxN, 2NxN, and Nx2N
 				if (rpcBestCU->getSlice()->getSliceType() != I_SLICE)//I片不进行帧间预测
 				{
-					//2Nx2N?????????
+					//2Nx2N        ////////2Nx2N在前面的skip部分应该是已经做过了，所以后边就不再做了。这里官方代码只留了一行“2Nx2N”的注释。
 					// 2Nx2N, NxN
 					if (!((rpcBestCU->getWidth(0) == 8) && (rpcBestCU->getHeight(0) == 8)))
 					{
@@ -528,8 +532,8 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 						{
 							//只在最大深度且非8×8的CU尝试N×N模式
 							xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_NxN DEBUG_STRING_PASS_INTO(sDebug));
-							rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);//???????这是干嘛？
-							//此处不进行doNotBlockPu参数的赋值，即NxN模式不属于CFM快速运算中可以跳过其他模式的模式
+							rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+							//此处不进行相应判断和doNotBlockPu参数的赋值，即NxN模式应该是不属于CFM快速运算中可以跳过其他模式的模式
 						}
 					}
 
@@ -554,7 +558,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 					}
 
 					//READING_FLAG_AMPCoding
-					//AMP非对称运动分割
+					//AMP非对称运动分割（参与CFM）
 					//! Try AMP (SIZE_2NxnU, SIZE_2NxnD, SIZE_nLx2N, SIZE_nRx2N)
 					if (pcPic->getSlice(0)->getSPS()->getAMPAcc(uiDepth))//应该是获取该深度下AMP精度，即某一深度下是否允许AMP
 					{
@@ -741,7 +745,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 		rpcBestCU->getTotalCost() = m_pcRdCost->calcRdCost(rpcBestCU->getTotalBits(), rpcBestCU->getTotalDistortion());
 
 		// Early CU determination
-		if (m_pcEncCfg->getUseEarlyCU() && rpcBestCU->isSkipped(0))
+		if (m_pcEncCfg->getUseEarlyCU() && rpcBestCU->isSkipped(0))//好像是如果这一层用了Skip模式，就不再往下分层了。
 		{
 			bSubBranch = false;
 		}
@@ -807,6 +811,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 
 		// further split
 		//READING_FLAG_splitCU	CU分割递归
+		//bSubBranch参数在前面有赋值。若本层用了Skip模式，该参数就false了，不会再进行下面的递归。
 		if (bSubBranch && uiDepth < g_uiMaxCUDepth - g_uiAddCUDepth)
 		{
 			UChar       uhNextDepth = uiDepth + 1;
