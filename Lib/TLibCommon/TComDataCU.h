@@ -71,90 +71,90 @@ private:
   // class pointers
   // -------------------------------------------------------------------------------------------------------------------
 
-  TComPic*      m_pcPic;              ///< picture class pointer
-  TComSlice*    m_pcSlice;            ///< slice header pointer
+  TComPic*      m_pcPic;              // picture class pointer
+  TComSlice*    m_pcSlice;            // slice header pointer
 
   // -------------------------------------------------------------------------------------------------------------------
   // CU description
   // -------------------------------------------------------------------------------------------------------------------
 
-  UInt          m_uiCUAddr;           ///< CU address in a slice
-  UInt          m_uiAbsIdxInLCU;      ///< absolute address in a CU. It's Z scan order
-  UInt          m_uiCUPelX;           ///< CU position in a pixel (X)
-  UInt          m_uiCUPelY;           ///< CU position in a pixel (Y)
-  UInt          m_uiNumPartition;     ///< total number of minimum partitions in a CU
-  UChar*        m_puhWidth;           ///< array of widths
-  UChar*        m_puhHeight;          ///< array of heights
-  UChar*        m_puhDepth;           ///< array of depths
-  Int           m_unitSize;           ///< size of a "minimum partition"
+  UInt          m_uiCUAddr;           // CU address in a slice 一个LCU在slice中的位置，raster扫描顺序。
+  UInt          m_uiAbsIdxInLCU;      // absolute address in a CU. It's Z scan order 当前CU在LCU中的位置。采用Z扫描顺序。
+  UInt          m_uiCUPelX;           // CU position in a pixel (X)
+  UInt          m_uiCUPelY;           // CU position in a pixel (Y)
+  UInt          m_uiNumPartition;     // total number of minimum partitions in a CU
+  UChar*        m_puhWidth;           // array of widths CU的宽度。
+  UChar*        m_puhHeight;          // array of heights CU的高度。
+  UChar*        m_puhDepth;           // array of depths CU所处的深度。
+  Int           m_unitSize;           // size of a "minimum partition"
 
   // -------------------------------------------------------------------------------------------------------------------
   // CU data
   // -------------------------------------------------------------------------------------------------------------------
 
-  Bool*          m_skipFlag;           ///< array of skip flags
-  Char*          m_pePartSize;         ///< array of partition sizes
-  Char*          m_pePredMode;         ///< array of prediction modes
-  Char*          m_crossComponentPredictionAlpha[MAX_NUM_COMPONENT]; ///< array of cross-component prediction alpha values
-  Bool*          m_CUTransquantBypass;   ///< array of cu_transquant_bypass flags
-  Char*          m_phQP;               ///< array of QP values
-  UChar*         m_ChromaQpAdj;        ///< array of chroma QP adjustments (indexed)
+  Bool*          m_skipFlag;           // array of skip flags
+  Char*          m_pePartSize;         // array of partition sizes PU的类型。
+  Char*          m_pePredMode;         // array of prediction modes 编码模式。
+  Char*          m_crossComponentPredictionAlpha[MAX_NUM_COMPONENT]; // array of cross-component prediction alpha values
+  Bool*          m_CUTransquantBypass;   // array of cu_transquant_bypass flags
+  Char*          m_phQP;               // array of QP values
+  UChar*         m_ChromaQpAdj;        // array of chroma QP adjustments (indexed)
   UInt           m_codedChromaQpAdj;
-  UChar*         m_puhTrIdx;           ///< array of transform indices
-  UChar*         m_puhTransformSkip[MAX_NUM_COMPONENT];///< array of transform skipping flags
-  UChar*         m_puhCbf[MAX_NUM_COMPONENT];          ///< array of coded block flags (CBF)
-  TComCUMvField  m_acCUMvField[NUM_REF_PIC_LIST_01];    ///< array of motion vectors.
-  TCoeff*        m_pcTrCoeff[MAX_NUM_COMPONENT];       ///< array of transform coefficient buffers (0->Y, 1->Cb, 2->Cr)
+  UChar*         m_puhTrIdx;           // array of transform indices
+  UChar*         m_puhTransformSkip[MAX_NUM_COMPONENT];// array of transform skipping flags
+  UChar*         m_puhCbf[MAX_NUM_COMPONENT];          // array of coded block flags (CBF)
+  TComCUMvField  m_acCUMvField[NUM_REF_PIC_LIST_01];    // array of motion vectors.
+  TCoeff*        m_pcTrCoeff[MAX_NUM_COMPONENT];       // array of transform coefficient buffers (0->Y, 1->Cb, 2->Cr)
 #if ADAPTIVE_QP_SELECTION
   TCoeff*        m_pcArlCoeff[MAX_NUM_COMPONENT];  // ARL coefficient buffer (0->Y, 1->Cb, 2->Cr)
   static TCoeff* m_pcGlbArlCoeff[MAX_NUM_COMPONENT]; // global ARL buffer
-  Bool           m_ArlCoeffIsAliasedAllocation;  ///< ARL coefficient buffer is an alias of the global buffer and must not be free()'d
+  Bool           m_ArlCoeffIsAliasedAllocation;  // ARL coefficient buffer is an alias of the global buffer and must not be free()'d
 #endif
 
-  Pel*           m_pcIPCMSample[MAX_NUM_COMPONENT];    ///< PCM sample buffer (0->Y, 1->Cb, 2->Cr)
+  Pel*           m_pcIPCMSample[MAX_NUM_COMPONENT];    // PCM sample buffer (0->Y, 1->Cb, 2->Cr)
 
   // -------------------------------------------------------------------------------------------------------------------
   // neighbour access variables
   // -------------------------------------------------------------------------------------------------------------------
 
-  TComDataCU*   m_pcCUAboveLeft;      ///< pointer of above-left CU
-  TComDataCU*   m_pcCUAboveRight;     ///< pointer of above-right CU
-  TComDataCU*   m_pcCUAbove;          ///< pointer of above CU
-  TComDataCU*   m_pcCULeft;           ///< pointer of left CU
-  TComDataCU*   m_apcCUColocated[NUM_REF_PIC_LIST_01];  ///< pointer of temporally colocated CU's for both directions
-  TComMvField   m_cMvFieldA;          ///< motion vector of position A
-  TComMvField   m_cMvFieldB;          ///< motion vector of position B
-  TComMvField   m_cMvFieldC;          ///< motion vector of position C
-  TComMv        m_cMvPred;            ///< motion vector predictor
+  TComDataCU*   m_pcCUAboveLeft;      // pointer of above-left CU
+  TComDataCU*   m_pcCUAboveRight;     // pointer of above-right CU
+  TComDataCU*   m_pcCUAbove;          // pointer of above CU
+  TComDataCU*   m_pcCULeft;           // pointer of left CU
+  TComDataCU*   m_apcCUColocated[NUM_REF_PIC_LIST_01];  // pointer of temporally colocated CU's for both directions
+  TComMvField   m_cMvFieldA;          // motion vector of position A
+  TComMvField   m_cMvFieldB;          // motion vector of position B
+  TComMvField   m_cMvFieldC;          // motion vector of position C
+  TComMv        m_cMvPred;            // motion vector predictor
 
   // -------------------------------------------------------------------------------------------------------------------
   // coding tool information
   // -------------------------------------------------------------------------------------------------------------------
 
-  Bool*         m_pbMergeFlag;        ///< array of merge flags
-  UChar*        m_puhMergeIndex;      ///< array of merge candidate indices
+  Bool*         m_pbMergeFlag;        // array of merge flags
+  UChar*        m_puhMergeIndex;      // array of merge candidate indices
 #if AMP_MRG
   Bool          m_bIsMergeAMP;
 #endif
   UChar*        m_puhIntraDir[MAX_NUM_CHANNEL_TYPE]; // 0-> Luma, 1-> Chroma
-  UChar*        m_puhInterDir;        ///< array of inter directions
-  Char*         m_apiMVPIdx[NUM_REF_PIC_LIST_01];       ///< array of motion vector predictor candidates
-  Char*         m_apiMVPNum[NUM_REF_PIC_LIST_01];       ///< array of number of possible motion vectors predictors
-  Bool*         m_pbIPCMFlag;         ///< array of intra_pcm flags
+  UChar*        m_puhInterDir;        // array of inter directions
+  Char*         m_apiMVPIdx[NUM_REF_PIC_LIST_01];       // array of motion vector predictor candidates
+  Char*         m_apiMVPNum[NUM_REF_PIC_LIST_01];       // array of number of possible motion vectors predictors
+  Bool*         m_pbIPCMFlag;         // array of intra_pcm flags
 
   // -------------------------------------------------------------------------------------------------------------------
   // misc. variables
   // -------------------------------------------------------------------------------------------------------------------
 
-  Bool          m_bDecSubCu;          ///< indicates decoder-mode
-  Double        m_dTotalCost;         ///< sum of partition RD costs
-  Distortion    m_uiTotalDistortion;  ///< sum of partition distortion
-  UInt          m_uiTotalBits;        ///< sum of partition bits
-  UInt          m_uiTotalBins;        ///< sum of partition bins
-  UInt*         m_sliceStartCU;       ///< Start CU address of current slice
-  UInt*         m_sliceSegmentStartCU;///< Start CU address of current slice
+  Bool          m_bDecSubCu;          // indicates decoder-mode
+  Double        m_dTotalCost;         // sum of partition RD costs
+  Distortion    m_uiTotalDistortion;  // sum of partition distortion
+  UInt          m_uiTotalBits;        // sum of partition bits
+  UInt          m_uiTotalBins;        // sum of partition bins
+  UInt*         m_sliceStartCU;       // Start CU address of current slice
+  UInt*         m_sliceSegmentStartCU;// Start CU address of current slice
   Char          m_codedQP;
-  UChar*        m_explicitRdpcmMode[MAX_NUM_COMPONENT]; ///< Stores the explicit RDPCM mode for all TUs belonging to this CU
+  UChar*        m_explicitRdpcmMode[MAX_NUM_COMPONENT]; // Stores the explicit RDPCM mode for all TUs belonging to this CU
 
 protected:
 
@@ -442,7 +442,7 @@ public:
 
   Bool          isIntra            ( UInt uiPartIdx )  const { return m_pePredMode[ uiPartIdx ] == MODE_INTRA;                                              }
   Bool          isInter            ( UInt uiPartIdx )  const { return m_pePredMode[ uiPartIdx ] == MODE_INTER;                                              }
-  Bool          isSkipped          ( UInt uiPartIdx );                                                     ///< SKIP (no residual)
+  Bool          isSkipped          ( UInt uiPartIdx );                                                     // SKIP (no residual)
   Bool          isBipredRestriction( UInt puIdx );
 
   // -------------------------------------------------------------------------------------------------------------------

@@ -373,6 +373,12 @@ Void TEncCu::deriveTestModeAMP(TComDataCU *&rpcBestCU, PartSize eParentPartSize,
 *	用到递归。在求该块的最佳CU划分时，需要求得四个子块的最佳划分并与整块的最佳划分比较，得到该块最终的最佳划分。在求得子块划分时，调用了函数本身，完成递归。
 *	TempCU表示当前CU的切法，BestCU表示前面算出的最好的CU切法。
 *	m_ppcBestCU / m_ppcTempCU：存储最好的/当前的QP和在每一个深度的预测模式决策。
+*
+*	由此总结，每个深度的预测用的都是temp，
+*	预测完后跟best比较并交换。best保留作为当前深度的预测数据，
+*	而temp再次初始化。在下一深度的4个子CU预测中用的是subtemp，
+*	每预测完一个子CU，就跟subbest比较交换，再把subbest的数据复制到已经初始化的temp的相应位置。
+*	当temp获取完4个子CU的subbest的数据后，就代表了整个下一深度的数据，这时再与代表当前深度数据的best比较交换
 */
 #if AMP_ENC_SPEEDUP
 Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug_), PartSize eParentPartSize)
@@ -381,10 +387,12 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth)
 #endif
 {
-	TComPic* pcPic = rpcBestCU->getPic();
+	TComPic* pcPic = rpcBestCU->getPic();	//获取CU所在的图像。
 	DEBUG_STRING_NEW(sDebug)
 
 		// get Original YUV data from picture
+		// 从图像中获取原始YUV数据  
+		// getZorderIdxInCU获取CU在Z形扫描中的顺序 
 		m_ppcOrigYuv[uiDepth]->copyFromPicYuv(pcPic->getPicYuvOrg(), rpcBestCU->getAddr(), rpcBestCU->getZorderIdxInCU());
 
 	// variable for Early CU determination
@@ -442,13 +450,13 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 	}
 
 	// If slice start or slice end is within this cu...
-	//判断CU是否处于当前slice的头或者尾
+	//判断CU是否处于当前slice的头或者尾，是否在再图像的内部（即该CU不再图像的边缘）。
 	TComSlice * pcSlice = rpcTempCU->getPic()->getSlice(rpcTempCU->getPic()->getCurrSliceIdx());
 	Bool bSliceStart = pcSlice->getSliceSegmentCurStartCUAddr() > rpcTempCU->getSCUAddr() && pcSlice->getSliceSegmentCurStartCUAddr() < rpcTempCU->getSCUAddr() + rpcTempCU->getTotalNumPart();
 	Bool bSliceEnd = (pcSlice->getSliceSegmentCurEndCUAddr() > rpcTempCU->getSCUAddr() && pcSlice->getSliceSegmentCurEndCUAddr() < rpcTempCU->getSCUAddr() + rpcTempCU->getTotalNumPart());
 	Bool bInsidePicture = (uiRPelX < rpcBestCU->getSlice()->getSPS()->getPicWidthInLumaSamples()) && (uiBPelY < rpcBestCU->getSlice()->getSPS()->getPicHeightInLumaSamples());
 	// We need to split, so don't try these modes.
-	//如果处于slice头或者slice尾，不再尝试这些模式
+	//如果处于slice头或者slice尾，且不再图像的边缘，不再尝试这些模式
 	if (!bSliceEnd && !bSliceStart && bInsidePicture)
 	{
 		for (Int iQP = iMinQP; iQP <= iMaxQP; iQP++)//尝试各种QP。先进行skip模式的预测
@@ -1432,6 +1440,7 @@ Void TEncCu::xCheckRDCostMerge2Nx2N(TComDataCU*& rpcBestCU, TComDataCU*& rpcTemp
 
 #if AMP_MRG
 Void TEncCu::xCheckRDCostInter(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, PartSize ePartSize DEBUG_STRING_FN_DECLARE(sDebug), Bool bUseMRG)
+//在.h文件中，最后一个bool参数是被赋了默认值的：Bool bUseMRG = false。好像是默认是不启用merge的。但后面没有用到这个参数，而是用宏定义来控制的。
 #else
 Void TEncCu::xCheckRDCostInter(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, PartSize ePartSize)
 #endif
@@ -1451,6 +1460,7 @@ Void TEncCu::xCheckRDCostInter(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, P
 #if AMP_MRG
 	rpcTempCU->setMergeAMP(true);
 	m_pcPredSearch->predInterSearch(rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcRecoYuvTemp[uhDepth] DEBUG_STRING_PASS_INTO(sTest), false, bUseMRG);
+	//预测搜索关键函数。运动估计和运动补偿（ME和MC）。
 #else
 	m_pcPredSearch->predInterSearch(rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcRecoYuvTemp[uhDepth]);
 #endif
@@ -1462,6 +1472,7 @@ Void TEncCu::xCheckRDCostInter(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, P
 	}
 #endif
 
+	//编码、计算、赋值。
 	m_pcPredSearch->encodeResAndCalcRdInterCU(rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcResiYuvBest[uhDepth], m_ppcRecoYuvTemp[uhDepth], false DEBUG_STRING_PASS_INTO(sTest));
 	rpcTempCU->getTotalCost() = m_pcRdCost->calcRdCost(rpcTempCU->getTotalBits(), rpcTempCU->getTotalDistortion());
 
@@ -1600,6 +1611,7 @@ Void TEncCu::xCheckIntraPCM(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
  * \param rpcBestCU
  * \param rpcTempCU
  * \returns Void
+ * \就是单纯的比较总RDCost。若rpcTempCU更佳，就交换两个指针的指向和其他参数。
  */
 Void TEncCu::xCheckBestMode(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth DEBUG_STRING_FN_DECLARE(sParent) DEBUG_STRING_FN_DECLARE(sTest) DEBUG_STRING_PASS_INTO(Bool bAddSizeInfo))
 {
