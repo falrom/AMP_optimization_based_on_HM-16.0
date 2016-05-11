@@ -44,6 +44,8 @@
 #include <math.h>
 #include <limits>
 
+#include "TLibCommon/JHdebug.h"
+
 
   //! \ingroup TLibEncoder
   //! \{
@@ -3110,6 +3112,16 @@ Void TEncSearch::predInterSearch(TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv*& 
 	// 预测的方向的个数（B帧有两个，前向和后向；P帧有一个，前向）
 	Int          iNumPredDir = pcCU->getSlice()->isInterP() ? 1 : 2;
 
+#if JH_IS_DEBUGING
+#if RUN_MY_JOB
+
+	bool nowIsInterP = pcCU->getSlice()->isInterP();		//判断是不是P帧
+	bool thisIs2NxN = (pcCU->getPartitionSize(0) == SIZE_2NxN);	//判断该CU划分
+	bool thisIsNx2N = (pcCU->getPartitionSize(0) == SIZE_Nx2N);	//判断该CU划分
+
+#endif // RUN_MY_JOB
+#endif // JH_IS_DEBUGING
+
 	TComMv       cMvPred[2][33];
 
 	TComMv       cMvPredBi[2][33];
@@ -3147,9 +3159,10 @@ Void TEncSearch::predInterSearch(TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv*& 
 	UChar uhInterDirNeighbours[MRG_MAX_NUM_CANDS];
 	Int numValidMergeCand = 0;
 
-	//遍历当前帧被分成的各个部分。
-	for (Int iPartIdx = 0; iPartIdx < iNumPart; iPartIdx++)
+	//遍历各个部分。*********************************************
+	for (Int iPartIdx = 0; iPartIdx < iNumPart; iPartIdx++)	// 当2Nx2N时，只有一遍。
 	{
+		// 代表了前后两个预测方向的Cost。如果是P帧的话，应该是只用到了uiCost[0]。
 		Distortion   uiCost[2] = { std::numeric_limits<Distortion>::max(), std::numeric_limits<Distortion>::max() };
 		Distortion   uiCostBi = std::numeric_limits<Distortion>::max();
 		Distortion   uiCostTemp;
@@ -3194,7 +3207,7 @@ Void TEncSearch::predInterSearch(TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv*& 
 #endif
 
 			//  Uni-directional prediction
-			for (Int iRefList = 0; iRefList < iNumPredDir; iRefList++)
+			for (Int iRefList = 0; iRefList < iNumPredDir; iRefList++)	// 遍历预测方向。若为P帧，只有一个预测方向，不出意外，iRefList只有0值。
 			{
 				RefPicList  eRefPicList = (iRefList ? REF_PIC_LIST_1 : REF_PIC_LIST_0);
 
@@ -3641,6 +3654,7 @@ Void TEncSearch::predInterSearch(TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv*& 
 		} // end if bTestNormalMC
 #endif
 
+		// 应该是合并估计信息的。2Nx2N的不用合并，因为for循环只走一遍。其他的都要合并，因为有好几个PU，遍历每一个PU最后都需要这个if。
 		if (pcCU->getPartitionSize(uiPartAddr) != SIZE_2Nx2N)	// 如果分割类型不是2Nx2N
 		{
 			UInt uiMRGInterDir = 0;
@@ -3704,6 +3718,43 @@ Void TEncSearch::predInterSearch(TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv*& 
 				pcCU->getCUMvField(REF_PIC_LIST_1)->setAllMvField(cMEMvField[1], ePartSize, uiPartAddr, 0, iPartIdx);
 			}
 		}
+
+
+#if JH_IS_DEBUGING
+#if RUN_MY_JOB
+
+		if (nowIsInterP && thisIs2NxN)
+		{
+			switch (iPartIdx)
+			{
+			case 0:
+				JHdebug::CostUp = uiCost[0];
+				break;
+			case 1:
+				JHdebug::CostDown = uiCost[0];
+				break;
+			default:
+				break;
+			}
+		}
+		else if (nowIsInterP && thisIsNx2N)
+		{
+			switch (iPartIdx)
+			{
+			case 0:
+				JHdebug::CostLeft = uiCost[0];
+				break;
+			case 1:
+				JHdebug::CostRight = uiCost[0];
+				break;
+			default:
+				break;
+			}
+		}
+
+#endif // RUN_MY_JOB
+#endif // JH_IS_DEBUGING
+
 
 		//  MC 运动补偿
 		motionCompensation(pcCU, rpcPredYuv, REF_PIC_LIST_X, iPartIdx);

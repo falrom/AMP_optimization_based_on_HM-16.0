@@ -21,6 +21,7 @@
 #define			PRINT_ENCODE_ALLP_TIME		1				//打印所有P帧的编码时间
 
 #define			RUN_MY_JOB					1				//我进行优化工作部分的开关。
+#define			DEBUG_MY_JOB				1				//优化部分工作的调试开关。
 
 //	============================================================================
 //	调试用类
@@ -37,6 +38,22 @@ public:
 
 	static clock_t timeOfIEnd;							//记录第一帧I帧编码完成时间点
 	static double timeOfAllP;							//记录编码所有P帧所用时间
+
+	//运动估计函数中用到的一些标志位
+	//static bool nowIsInterP;
+
+	//运动估计函数中用到的一些需要记录的值
+	//2NxN
+	static unsigned int CostUp;
+	static unsigned int CostDown;
+	//Nx2N
+	static unsigned int CostLeft;
+	static unsigned int CostRight;
+
+	//判断阈值恒量
+	static const double thresholdSmaller16;					//针对尺寸为16的CU的最佳判断阈值为较小Cost值，在此设定其最大值。
+	static const double thresholdRatio32;					//针对尺寸为32的CU的最佳判断阈值为比例值，在此设定其最小值。
+	static const double thresholdSmaller64;					//针对尺寸为64的CU的最佳判断阈值为较小Cost值，在此设定其最大值。
 
 private:
 

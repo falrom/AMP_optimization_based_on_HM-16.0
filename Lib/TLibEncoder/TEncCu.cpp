@@ -456,7 +456,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 	Bool bSliceEnd = (pcSlice->getSliceSegmentCurEndCUAddr() > rpcTempCU->getSCUAddr() && pcSlice->getSliceSegmentCurEndCUAddr() < rpcTempCU->getSCUAddr() + rpcTempCU->getTotalNumPart());
 	Bool bInsidePicture = (uiRPelX < rpcBestCU->getSlice()->getSPS()->getPicWidthInLumaSamples()) && (uiBPelY < rpcBestCU->getSlice()->getSPS()->getPicHeightInLumaSamples());
 	// We need to split, so don't try these modes.
-	//如果处于slice头或者slice尾，且不再图像的边缘，不再尝试这些模式
+	//如果不处于slice头或者slice尾，且不在图像的边缘，再尝试这些模式
 	if (!bSliceEnd && !bSliceStart && bInsidePicture)
 	{
 		for (Int iQP = iMinQP; iQP <= iMaxQP; iQP++)//尝试各种QP。先进行skip模式的预测
@@ -585,10 +585,82 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 
 						deriveTestModeAMP(rpcBestCU, eParentPartSize, bTestAMP_Hor, bTestAMP_Ver, bTestMergeAMP_Hor, bTestMergeAMP_Ver);
 						//估计是用来先判定横、竖以及两者的merge模式共四种情况那种更优。传进去的后四个参数都是引用，在该void函数中会被修改。
+						//64x64的CU不进行AMP。
 						//此应该为AMP快速算法的关键函数
 #else
 						deriveTestModeAMP(rpcBestCU, eParentPartSize, bTestAMP_Hor, bTestAMP_Ver);
 #endif
+
+#if JH_IS_DEBUGING
+
+#if RUN_MY_JOB
+						bool horFlag = JHdebug::CostUp > JHdebug::CostDown;
+						bool verFlag = JHdebug::CostLeft > JHdebug::CostRight;
+
+						//// 计算横竖标志位。
+						//bool horFlag;
+						//bool verFlag;
+
+						////计算必要的中间变量
+						//UInt horSmallerCost;
+						//UInt verSmallerCost;
+						//UInt horLargerCost;
+						//UInt verLargerCost;
+						//UInt horDiffCost;					
+						//UInt verDiffCost;
+
+						//if (horFlag = (JHdebug::CostUp > JHdebug::CostDown))
+						//{
+						//	horLargerCost = JHdebug::CostUp;
+						//	horSmallerCost = JHdebug::CostDown;
+						//	horDiffCost = JHdebug::CostUp - JHdebug::CostDown;
+						//}
+						//else
+						//{
+						//	horLargerCost = JHdebug::CostDown;
+						//	horSmallerCost = JHdebug::CostUp;
+						//	horDiffCost = JHdebug::CostDown - JHdebug::CostUp;
+						//}
+						//UInt horAveCost = (JHdebug::CostUp + JHdebug::CostDown) >> 1;
+
+						//if (verFlag = (JHdebug::CostLeft > JHdebug::CostRight))
+						//{
+						//	verLargerCost = JHdebug::CostLeft;
+						//	verSmallerCost = JHdebug::CostRight;
+						//	verDiffCost = JHdebug::CostLeft - JHdebug::CostRight;
+						//}
+						//else
+						//{
+						//	verLargerCost = JHdebug::CostRight;
+						//	verSmallerCost = JHdebug::CostLeft;
+						//	verDiffCost = JHdebug::CostRight - JHdebug::CostLeft;
+						//}
+						//UInt horAveCost = (JHdebug::CostLeft + JHdebug::CostRight) >> 1;
+
+						////判断是否进行加速以及设置相应标志位
+						//bool horAMPSpeedUp = false;
+						//bool verAMPSpeedUp = false;
+
+						//UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
+						//switch (sizeOfCU)
+						//{
+						//case 16:
+
+						//	break;
+						//case 32:
+						//	break;
+						//case 64:
+						//	break;
+						//default:
+						//	break;
+						//}
+
+
+#endif // RUN_MY_JOB
+
+#endif // JH_IS_DEBUGING
+
+
 
 						//! Do horizontal AMP
 						//水平方向
@@ -679,13 +751,39 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 #endif
 
 #if JH_IS_DEBUGING
+
+#if DEBUG_MY_JOB
+
+						UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
+
+						switch (rpcBestCU->getPartitionSize(0))
+						{
+						case SIZE_2NxnU:
+							cout << "UP	" << horFlag << "		上 " << JHdebug::CostUp << "		下 " << JHdebug::CostDown << " " << sizeOfCU << endl;
+							break;
+						case SIZE_2NxnD:
+							cout << "DOWN	" << !horFlag << "		上 " << JHdebug::CostUp << "		下 " << JHdebug::CostDown << " " << sizeOfCU << endl;
+							break;
+						case SIZE_nLx2N:
+							cout << "LEFT	" << verFlag << "		左 " << JHdebug::CostLeft << "		右 " << JHdebug::CostRight << " " << sizeOfCU << endl;
+							break;
+						case SIZE_nRx2N:
+							cout << "RIGHT	" << !verFlag << "		左 " << JHdebug::CostLeft << "		右 " << JHdebug::CostRight << " " << sizeOfCU << endl;
+							break;
+						default:
+							break;
+						}
+
+#endif // DEBUG_MY_JOB
+
 #if FIND_AMP_TIMES
 						if ((rpcBestCU->getPartitionSize(0) >= 4) && (rpcBestCU->getPartitionSize(0) <= 7))//AMP模式的几种尺寸枚举值在4~7
 						{
 							JHdebug::timesOfUsingAmp++;
 						}
-#endif 
-#endif
+#endif // FIND_AMP_TIMES
+
+#endif // JH_IS_DEBUGING
 
 #else//放弃AMP的快速算法，一步步执行简单的各种情况的测试。
 						xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnU);
@@ -700,7 +798,30 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 
 #endif
 					}
+
+#if JH_IS_DEBUGING
+
+#if DEBUG_MY_JOB
+
+					//cout << "上：" << JHdebug::CostUp << "	下" << JHdebug::CostDown << "	左" << JHdebug::CostLeft << "	右" << JHdebug::CostRight << endl;
+
+#endif // DEBUG_MY_JOB
+
+#if RUN_MY_JOB
+					// 初始化Cost记录变量。
+					JHdebug::CostUp = 0;
+					JHdebug::CostDown = 0;
+					JHdebug::CostLeft = 0;
+					JHdebug::CostRight = 0;
+
+#endif // RUN_MY_JOB
+
+#endif // JH_IS_DEBUGING
+
+
 				}
+
+
 
 				// do normal intra modes
 				// speedup for inter frames
