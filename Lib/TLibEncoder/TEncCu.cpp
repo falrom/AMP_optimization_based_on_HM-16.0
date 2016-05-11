@@ -637,9 +637,15 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 						UInt verAveCost = (JHdebug::CostLeft + JHdebug::CostRight) >> 1;	//两个Cost的平均值
 						double verRatio = (double)verDiffCost / (double)verSmallerCost;		//比率=差值/较小值
 
+												
+#if FORCE_OPTIMISE	//不进行阈值判断，强制进行AMP优化						
+						bool horAMPSpeedUp = true;
+						bool verAMPSpeedUp = true;
+#else
 						//判断是否进行加速以及设置相应标志位
 						bool horAMPSpeedUp = false;
 						bool verAMPSpeedUp = false;
+
 						//判断依据：根据针对不同大小CU所设定的比率阈值决定是否进行某方向的快速算法。
 						UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
 						switch (sizeOfCU)
@@ -677,7 +683,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 						default:
 							break;
 						}
-
+#endif // FORCE_OPTIMISE
 
 #endif // RUN_MY_JOB
 
@@ -687,8 +693,30 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 
 						//! Do horizontal AMP
 						//水平方向
-						if (bTestAMP_Hor)
+						if (bTestAMP_Hor)//水平
 						{
+#if RUN_MY_JOB && JH_IS_DEBUGING
+							if (doNotBlockPu && (!horAMPSpeedUp || horFlag))	//这个逻辑关系是用卡诺图画出来的。
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug));
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+								if (m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnU)
+								{
+									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
+									//当判断该模式为当前最佳，系数均为零，doNotBlockPU置位为false，之后不再进行其他预测模式的测试。
+									//即AMP模式参与CFM快速运算
+								}
+							}
+							if (doNotBlockPu && (!horAMPSpeedUp || !horFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnD DEBUG_STRING_PASS_INTO(sDebug));
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+								if (m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnD)
+								{
+									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
+								}
+							}
+#else
 							if (doNotBlockPu)
 							{
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug));
@@ -709,10 +737,32 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
 								}
 							}
+#endif // RUN_MY_JOB
 						}
 #if AMP_MRG
-						else if (bTestMergeAMP_Hor)
+						else if (bTestMergeAMP_Hor)//水平merge
 						{
+#if RUN_MY_JOB && JH_IS_DEBUGING
+
+							if (doNotBlockPu && (!horAMPSpeedUp || horFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug), true);
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+								if (m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnU)
+								{
+									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
+								}
+							}
+							if (doNotBlockPu && (!horAMPSpeedUp || !horFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnD DEBUG_STRING_PASS_INTO(sDebug), true);
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+								if (m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnD)
+								{
+									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
+								}
+							}
+#else
 							if (doNotBlockPu)
 							{
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug), true);
@@ -731,13 +781,32 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
 								}
 							}
+
+#endif // RUN_MY_JOB
 						}
 #endif
 
 						//! Do horizontal AMP
 						//此处原文注释应该是写错了，应该是“vertical AMP”，垂直方向
-						if (bTestAMP_Ver)
+						if (bTestAMP_Ver)//垂直
 						{
+#if RUN_MY_JOB && JH_IS_DEBUGING
+
+							if (doNotBlockPu && (!verAMPSpeedUp || verFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug));
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+								if (m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_nLx2N)
+								{
+									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
+								}
+							}
+							if (doNotBlockPu && (!verAMPSpeedUp || !verFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug));
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+							}
+#else
 							if (doNotBlockPu)
 							{
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug));
@@ -752,10 +821,29 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug));
 								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
 							}
+#endif // RUN_MY_JOB
 						}
+
 #if AMP_MRG
-						else if (bTestMergeAMP_Ver)
+						else if (bTestMergeAMP_Ver)//垂直merge
 						{
+#if RUN_MY_JOB && JH_IS_DEBUGING
+
+							if (doNotBlockPu && (!verAMPSpeedUp || verFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug), true);
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+								if (m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_nLx2N)
+								{
+									doNotBlockPu = rpcBestCU->getQtRootCbf(0) != 0;
+								}
+							}
+							if (doNotBlockPu && (!verAMPSpeedUp || !verFlag))
+							{
+								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug), true);
+								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
+							}
+#else
 							if (doNotBlockPu)
 							{
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug), true);
@@ -770,6 +858,7 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 								xCheckRDCostInter(rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug), true);
 								rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);
 							}
+#endif // RUN_MY_JOB
 						}
 #endif
 
