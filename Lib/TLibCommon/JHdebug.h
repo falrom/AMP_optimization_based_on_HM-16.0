@@ -50,10 +50,13 @@ public:
 	static unsigned int CostLeft;
 	static unsigned int CostRight;
 
+	static unsigned int timesOfGoodJob;						//统计我的加速方法测试准确的次数
+	static unsigned int timesOfDoJob;						//统计我的加速方法测试参与的次数（仅统计横竖方向与最佳AMP相同时）
+
 	//判断阈值恒量
-	static const double thresholdSmaller16;					//针对尺寸为16的CU的最佳判断阈值为较小Cost值，在此设定其最大值。
+	static const double thresholdRatio16;					//针对尺寸为16的CU的最佳判断阈值为比例值，在此设定其最小值。
 	static const double thresholdRatio32;					//针对尺寸为32的CU的最佳判断阈值为比例值，在此设定其最小值。
-	static const double thresholdSmaller64;					//针对尺寸为64的CU的最佳判断阈值为较小Cost值，在此设定其最大值。
+	static const double thresholdRatio64;					//针对尺寸为64的CU的最佳判断阈值为比例值，在此设定其最小值。
 
 private:
 

@@ -3115,7 +3115,7 @@ Void TEncSearch::predInterSearch(TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv*& 
 #if JH_IS_DEBUGING
 #if RUN_MY_JOB
 
-	bool nowIsInterP = pcCU->getSlice()->isInterP();		//判断是不是P帧
+	bool nowIsInterP = pcCU->getSlice()->isInterP();			//判断是不是P帧
 	bool thisIs2NxN = (pcCU->getPartitionSize(0) == SIZE_2NxN);	//判断该CU划分
 	bool thisIsNx2N = (pcCU->getPartitionSize(0) == SIZE_Nx2N);	//判断该CU划分
 

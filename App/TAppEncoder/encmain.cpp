@@ -31,9 +31,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** \file     encmain.cpp
-    \brief    Encoder application main
-*/
+ /** \file     encmain.cpp
+	 \brief    Encoder application main
+ */
 
 #include <time.h>
 #include <iostream>
@@ -42,8 +42,8 @@
 
 #include "TLibCommon/JHdebug.h"
 
-//! \ingroup TAppEncoder
-//! \{
+ //! \ingroup TAppEncoder
+ //! \{
 
 #include "../Lib/TLibCommon/Debug.h"
 
@@ -53,75 +53,82 @@
 
 int main(int argc, char* argv[])
 {
-  TAppEncTop  cTAppEncTop;
+	TAppEncTop  cTAppEncTop;
 
-  // print information
-  fprintf( stdout, "\n" );
-  fprintf( stdout, "HM software: Encoder Version [%s] (including RExt)", NV_VERSION );
-  fprintf( stdout, NVM_ONOS );
-  fprintf( stdout, NVM_COMPILEDBY );
-  fprintf( stdout, NVM_BITS );
-  fprintf( stdout, "\n\n" );
+	// print information
+	fprintf(stdout, "\n");
+	fprintf(stdout, "HM software: Encoder Version [%s] (including RExt)", NV_VERSION);
+	fprintf(stdout, NVM_ONOS);
+	fprintf(stdout, NVM_COMPILEDBY);
+	fprintf(stdout, NVM_BITS);
+	fprintf(stdout, "\n\n");
 
-  // create application encoder class
-  cTAppEncTop.create();
+	// create application encoder class
+	cTAppEncTop.create();
 
-  // parse configuration
-  try
-  {
-    if(!cTAppEncTop.parseCfg( argc, argv ))
-    {
-      cTAppEncTop.destroy();
+	// parse configuration
+	try
+	{
+		if (!cTAppEncTop.parseCfg(argc, argv))
+		{
+			cTAppEncTop.destroy();
 #if RExt__ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
-      EnvVar::printEnvVar();
+			EnvVar::printEnvVar();
 #endif
-      return 1;
-    }
-  }
-  catch (df::program_options_lite::ParseFailure &e)
-  {
-    std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
-    return 1;
-  }
+			return 1;
+		}
+	}
+	catch (df::program_options_lite::ParseFailure &e)
+	{
+		std::cerr << "Error parsing option \"" << e.arg << "\" with argument \"" << e.val << "\"." << std::endl;
+		return 1;
+	}
 
 #if RExt__PRINT_MACRO_VALUES
-  printRExtMacroSettings();
+	printRExtMacroSettings();
 #endif
 
 #if RExt__ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
-  EnvVar::printEnvVarInUse();
+	EnvVar::printEnvVarInUse();
 #endif
 
-  // starting time
-  Double dResult;
-  clock_t lBefore = clock();
+	// starting time
+	Double dResult;
+	clock_t lBefore = clock();
 
-  // call encoding function
-  cTAppEncTop.encode();
+	// call encoding function
+	cTAppEncTop.encode();
 
-  // ending time
-  dResult = (Double)(clock()-lBefore) / CLOCKS_PER_SEC;
-  printf("\n Total Time: %12.3f sec.\n", dResult);
+	// ending time
+	dResult = (Double)(clock() - lBefore) / CLOCKS_PER_SEC;
+	printf("\n Total Time: %12.3f sec.\n", dResult);
 
-  // destroy application encoder class
-  cTAppEncTop.destroy();
+	// destroy application encoder class
+	cTAppEncTop.destroy();
 
 #if JH_IS_DEBUGING
 
 #if FIND_AMP_TIMES
-  cout << "共进行了：" << JHdebug::timesOfAmpJudge << "次AMP模式判决" << endl;
-  cout << "（非最终）结果采用了AMP模式的次数为：" << JHdebug::timesOfUsingAmp << endl;
+	cout << "共进行了：" << JHdebug::timesOfAmpJudge << "次AMP模式判决" << endl;
+	cout << "（非最终）结果采用了AMP模式的次数为：" << JHdebug::timesOfUsingAmp << endl;
 #endif
 
 #if PRINT_ENCODE_ALLP_TIME
-  cout << "编码所有P帧共用时：" << JHdebug::timeOfAllP << "s" << endl;
+	cout << "编码所有P帧共用时：" << JHdebug::timeOfAllP << "s" << endl;
 #endif // PRINT_ENCODE_ALLP_TIME
 
-  system("pause");
+
+#if DEBUG_MY_JOB
+	cout << "我所做的快速算法估计准确的次数为：" << JHdebug::timesOfGoodJob << "次。" << endl;
+	cout << "快速算法（横纵正确）参与的次数为：" << JHdebug::timesOfDoJob << "次。" << endl;
+	cout << "快速算法估计准确的比例为：" << (double)JHdebug::timesOfGoodJob / (double)JHdebug::timesOfDoJob << endl;
+#endif // DEBUG_MY_JOB
+
+	system("pause");
 
 #endif 
 
-  return 0;
+	return 0;
 }
 
 //! \}

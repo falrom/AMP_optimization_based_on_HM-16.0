@@ -27,6 +27,9 @@ unsigned int JHdebug::CostDown = 0;
 unsigned int JHdebug::CostLeft = 0;
 unsigned int JHdebug::CostRight = 0;
 
-const double JHdebug::thresholdSmaller16 = 500;
-const double JHdebug::thresholdRatio32 = 1.1;
-const double JHdebug::thresholdSmaller64 = 18000;
+const double JHdebug::thresholdRatio16 = 1.1;
+const double JHdebug::thresholdRatio32 = 0.7;
+const double JHdebug::thresholdRatio64 = 0.7;
+
+unsigned int JHdebug::timesOfGoodJob = 0;
+unsigned int JHdebug::timesOfDoJob = 0;

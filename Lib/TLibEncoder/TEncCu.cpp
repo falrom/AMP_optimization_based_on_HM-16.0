@@ -594,66 +594,89 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 #if JH_IS_DEBUGING
 
 #if RUN_MY_JOB
-						bool horFlag = JHdebug::CostUp > JHdebug::CostDown;
-						bool verFlag = JHdebug::CostLeft > JHdebug::CostRight;
+						
+						// 计算横竖标志位。即上下/左右那一边的Cost值大。
+						bool horFlag = (JHdebug::CostUp > JHdebug::CostDown);
+						bool verFlag = (JHdebug::CostLeft > JHdebug::CostRight);
 
-						//// 计算横竖标志位。
-						//bool horFlag;
-						//bool verFlag;
+						//计算必要的中间变量。统统分为横竖两种。
+						UInt horSmallerCost;		//较小的值
+						UInt verSmallerCost;
+						UInt horLargerCost;			//较大的值
+						UInt verLargerCost;
+						UInt horDiffCost;			//差值		
+						UInt verDiffCost;
+						//下面进行这些变量的赋值。
+						if (horFlag)
+						{
+							horLargerCost = JHdebug::CostUp;
+							horSmallerCost = JHdebug::CostDown;
+							horDiffCost = JHdebug::CostUp - JHdebug::CostDown;
+						}
+						else
+						{
+							horLargerCost = JHdebug::CostDown;
+							horSmallerCost = JHdebug::CostUp;
+							horDiffCost = JHdebug::CostDown - JHdebug::CostUp;
+						}
+						UInt horAveCost = (JHdebug::CostUp + JHdebug::CostDown) >> 1;		//两个Cost的平均值
+						double horRatio = (double)horDiffCost / (double)horSmallerCost;		//比率=差值/较小值
 
-						////计算必要的中间变量
-						//UInt horSmallerCost;
-						//UInt verSmallerCost;
-						//UInt horLargerCost;
-						//UInt verLargerCost;
-						//UInt horDiffCost;					
-						//UInt verDiffCost;
+						if (verFlag)
+						{
+							verLargerCost = JHdebug::CostLeft;
+							verSmallerCost = JHdebug::CostRight;
+							verDiffCost = JHdebug::CostLeft - JHdebug::CostRight;
+						}
+						else
+						{
+							verLargerCost = JHdebug::CostRight;
+							verSmallerCost = JHdebug::CostLeft;
+							verDiffCost = JHdebug::CostRight - JHdebug::CostLeft;
+						}
+						UInt verAveCost = (JHdebug::CostLeft + JHdebug::CostRight) >> 1;	//两个Cost的平均值
+						double verRatio = (double)verDiffCost / (double)verSmallerCost;		//比率=差值/较小值
 
-						//if (horFlag = (JHdebug::CostUp > JHdebug::CostDown))
-						//{
-						//	horLargerCost = JHdebug::CostUp;
-						//	horSmallerCost = JHdebug::CostDown;
-						//	horDiffCost = JHdebug::CostUp - JHdebug::CostDown;
-						//}
-						//else
-						//{
-						//	horLargerCost = JHdebug::CostDown;
-						//	horSmallerCost = JHdebug::CostUp;
-						//	horDiffCost = JHdebug::CostDown - JHdebug::CostUp;
-						//}
-						//UInt horAveCost = (JHdebug::CostUp + JHdebug::CostDown) >> 1;
-
-						//if (verFlag = (JHdebug::CostLeft > JHdebug::CostRight))
-						//{
-						//	verLargerCost = JHdebug::CostLeft;
-						//	verSmallerCost = JHdebug::CostRight;
-						//	verDiffCost = JHdebug::CostLeft - JHdebug::CostRight;
-						//}
-						//else
-						//{
-						//	verLargerCost = JHdebug::CostRight;
-						//	verSmallerCost = JHdebug::CostLeft;
-						//	verDiffCost = JHdebug::CostRight - JHdebug::CostLeft;
-						//}
-						//UInt horAveCost = (JHdebug::CostLeft + JHdebug::CostRight) >> 1;
-
-						////判断是否进行加速以及设置相应标志位
-						//bool horAMPSpeedUp = false;
-						//bool verAMPSpeedUp = false;
-
-						//UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
-						//switch (sizeOfCU)
-						//{
-						//case 16:
-
-						//	break;
-						//case 32:
-						//	break;
-						//case 64:
-						//	break;
-						//default:
-						//	break;
-						//}
+						//判断是否进行加速以及设置相应标志位
+						bool horAMPSpeedUp = false;
+						bool verAMPSpeedUp = false;
+						//判断依据：根据针对不同大小CU所设定的比率阈值决定是否进行某方向的快速算法。
+						UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
+						switch (sizeOfCU)
+						{
+						case 16:
+							if (horRatio > JHdebug::thresholdRatio16)
+							{
+								horAMPSpeedUp = true;
+							}
+							if (verRatio > JHdebug::thresholdRatio16)
+							{
+								verAMPSpeedUp = true;
+							}
+							break;
+						case 32:
+							if (horRatio > JHdebug::thresholdRatio32)
+							{
+								horAMPSpeedUp = true;
+							}
+							if (verRatio > JHdebug::thresholdRatio32)
+							{
+								verAMPSpeedUp = true;
+							}
+							break;
+						case 64:
+							if (horRatio > JHdebug::thresholdRatio64)
+							{
+								horAMPSpeedUp = true;
+							}
+							if (verRatio > JHdebug::thresholdRatio64)
+							{
+								verAMPSpeedUp = true;
+							}
+							break;
+						default:
+							break;
+						}
 
 
 #endif // RUN_MY_JOB
@@ -754,9 +777,10 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 
 #if DEBUG_MY_JOB
 
-						UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
+						//UInt sizeOfCU = (UInt)(rpcBestCU->getWidth(0));
 
-						switch (rpcBestCU->getPartitionSize(0))
+						//输出统计信息。
+					/*	switch (rpcBestCU->getPartitionSize(0))
 						{
 						case SIZE_2NxnU:
 							cout << "UP	" << horFlag << "		上 " << JHdebug::CostUp << "		下 " << JHdebug::CostDown << " " << sizeOfCU << endl;
@@ -769,6 +793,45 @@ Void TEncCu::xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt ui
 							break;
 						case SIZE_nRx2N:
 							cout << "RIGHT	" << !verFlag << "		左 " << JHdebug::CostLeft << "		右 " << JHdebug::CostRight << " " << sizeOfCU << endl;
+							break;
+						default:
+							break;
+						}*/
+
+						//统计优化次数和优化准确次数。
+						switch (rpcBestCU->getPartitionSize(0))
+						{
+						case SIZE_2NxnU:
+							if (horAMPSpeedUp)
+							{
+								JHdebug::timesOfDoJob++;
+								if (horFlag)
+									JHdebug::timesOfGoodJob++;
+							}
+							break;
+						case SIZE_2NxnD:
+							if (horAMPSpeedUp)
+							{
+								JHdebug::timesOfDoJob++;
+								if (!horFlag)
+									JHdebug::timesOfGoodJob++;
+							}
+							break;
+						case SIZE_nLx2N:
+							if (verAMPSpeedUp)
+							{
+								JHdebug::timesOfDoJob++;
+								if (verFlag)
+									JHdebug::timesOfGoodJob++;
+							}
+							break;
+						case SIZE_nRx2N:
+							if (verAMPSpeedUp)
+							{
+								JHdebug::timesOfDoJob++;
+								if (!verFlag)
+									JHdebug::timesOfGoodJob++;
+							}
 							break;
 						default:
 							break;
